@@ -4,6 +4,7 @@ namespace AgenterLab\AGWS;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\HttpClientException;
+use Firebase\JWT\JWT;
 
 class Client 
 {
