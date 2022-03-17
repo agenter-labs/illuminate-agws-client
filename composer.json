@@ -1,0 +1,39 @@
+{
+    "name": "agenter-labs/illuminate-agws-client",
+    "description": "Http Client",
+    "keywords": [
+        "laravel",
+        "http",
+        "client"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Abdulla",
+            "email": "dev@agenter.com",
+            "homepage": "https://agenter.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.3|^8.0",
+        "firebase/php-jwt": "^6.0",
+        "illuminate/http": "^8.0"
+    },
+    "require-dev": {
+        "laravel/lumen-framework": "^8.0"
+    },
+    "autoload": {
+    "psr-4": {
+            "AgenterLab\\AGWS\\": "./src"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AgenterLab\\AGWS\\AGWSServiceProvider"
+            ]
+        }
+    },
+    "prefer-stable": true
+}
