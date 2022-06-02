@@ -5,6 +5,7 @@ namespace AgenterLab\AGWS;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\HttpClientException;
 use Firebase\JWT\JWT;
+use Illuminate\Contracts\Cache\Repository;
 
 class Client 
 {
@@ -27,11 +28,6 @@ class Client
     /**
      * @var string
      */
-    private $jwtToken;
-
-    /**
-     * @var string
-     */
     private $privateKeyPath;
 
     /**
@@ -40,48 +36,50 @@ class Client
     private $privateKey;
 
     /**
+     * @var int
+     */
+    private $organization;
+
+    /**
+     * @var int
+     */
+    private $serviceUser;
+
+    /**
+     * @var int
+     */
+    private $user;
+
+    /**
+     * @var int
+     */
+    private $ttl;
+
+    /**
+     * @var \Illuminate\Contracts\Cache\Repository
+     */
+    private Repository $repository;
+
+    /**
      * @param string $clientName
      * @param string $tokenName
+     * @param \Illuminate\Contracts\Cache\Repository $repository
      * @param array $services
      */
     function __construct(
         string $clientName,
         string $tokenName,
+        Repository $repository,
+        int $ttl,
         array $services,
         string $privateKeyPath
     ) {
-
+       $this->repository = $repository;
        $this->clientName = $clientName;
        $this->tokenName = $tokenName;
        $this->services = $services;
        $this->privateKeyPath = $privateKeyPath;
-    }
-
-    /**
-     * Generate token
-     * 
-     * @param int|string $id
-     * @param int|string $cid
-     * @param bool $force
-     * 
-     * @return \AgenterLab\HttpClient\Client
-     */
-    public function token($id, $cid, bool $force = false) {
-
-        if (is_null($this->jwtToken) || $force == true) {
-
-            $payload = [
-                "sub" => $id,
-                "cid" => $cid,
-                "iat" => time(),
-                "nbf" => time(),
-                'exp' => time() + $this->ttl()
-            ];
-            
-            $this->jwtToken = JWT::encode($payload, $this->getPrivateKey(), 'RS256', $this->clientName);
-        }
-
-        return $this;
+       $this->ttl = $ttl;
     }
 
     /**
@@ -116,13 +114,26 @@ class Client
      * 
      * @return string
      */
-    private function getToken(): string {
+    public function getToken(): string {
 
-        if (empty($this->jwtToken)) {
-            throw new HttpClientException("Http client token empty");
-        }
+        $jwtToken = $this->repository->remember(
+        'agws_' . $this->tokenKey(), 
+        $this->ttl, 
+        function () {
 
-        return $this->jwtToken;
+            $time = time();
+            $payload = $this->getPayload();
+            $payload['exp'] = $time + $this->ttl;
+
+            return JWT::encode(
+                $payload, 
+                $this->getPrivateKey(), 
+                'RS256',
+                $this->clientName
+            );
+        });
+        
+        return $jwtToken;
     }
 
     /**
@@ -145,10 +156,64 @@ class Client
     }
 
     /**
-     * Get ttl
+     * Set User
      */
-    private function ttl(): int {
-        return 600;
+    public function setUser(int $user) {
+        $this->user = $user;
+        return $this;
+    }
+
+    /**
+     * Set service User
+     */
+    public function setServiceUser(int $serviceUser) {
+        $this->serviceUser = $serviceUser;
+        return $this;
+    }
+
+    /**
+     * Set service User
+     */
+    public function setOrganization(int $organization) {
+        $this->organization = $organization;
+        return $this;
+    }
+
+    /**
+     * Get token key
+     */
+    private function tokenKey(): string
+    {
+       return implode('-', [
+            $this->clientName,
+            $this->user ?: 'N',
+            $this->serviceUser ?: 'N',
+            $this->organization ?: 'N'
+        ]);
+    }
+
+    /**
+     * Get token payload
+     */
+    private function getPayload(): array
+    {
+        $payload = [
+            'iss' => $this->clientName
+        ];
+
+        if ($this->user) {
+            $payload['sub'] = $this->user;
+        }
+        
+        if ($this->serviceUser) {
+            $payload['aud'] = $this->serviceUser;
+        }
+        
+        if ($this->organization) {
+            $payload['org'] = $this->organization;
+        }
+
+        return $payload;
     }
 
 }
