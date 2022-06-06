@@ -139,7 +139,8 @@ class Request
         $token = $this->request->headers->get($this->tokenName);
 
         if (!$token) {
-            throw new RequestException("Request access token must not be empty");
+            return;
+            // throw new RequestException("Request access token must not be empty");
         }
 
         list($clientName, $jwt) = array_pad(explode(':', $token, 2), 2, null);
