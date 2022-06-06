@@ -152,8 +152,8 @@ class Request
         $decoded = JWT::decode($jwt, new Key($this->getKey($clientName), 'RS256'));
 
         $this->user = $decoded?->sub;
-        $this->serviceUser = $decoded?->aud;
-        $this->organization = $decoded?->org;
+        $this->serviceUser = $decoded?->aud ?? null;
+        $this->organization = $decoded?->org ?? null;
     }
     
 }
